@@ -34,7 +34,7 @@ namespace RemoteSaveAdaptor.Controllers
         /// <param name="addRecord">The order to be inserted.</param>
         /// <returns>It returns the newly inserted record detail.</returns>
         [HttpPost]
-        [Route("api/Pivot/Insert")]
+        [Route("api/Orders/Insert")]
         public ActionResult Insert([FromBody] CRUDModel<OrdersDetails> newRecord)
         {
             if (newRecord.value != null)
@@ -51,7 +51,7 @@ namespace RemoteSaveAdaptor.Controllers
         /// <param name="updateRecord">The updated order details.</param>
         /// <returns>It returns the updated order details.</returns>
         [HttpPost]
-        [Route("api/Pivot/Update")]
+        [Route("api/Orders/Update")]
         public object Update([FromBody] CRUDModel<OrdersDetails> updatedRecord)
         {
             var updatedOrder = updatedRecord.value;
@@ -65,9 +65,7 @@ namespace RemoteSaveAdaptor.Controllers
                     data.CustomerID = updatedOrder.CustomerID;
                     data.Freight = updatedOrder.Freight;
                     data.EmployeeID = updatedOrder.EmployeeID;
-                    // data.ShipCountry = updatedOrder.ShipCountry;
-                    // data.Verified = updatedOrder.Verified;
-                    // Update other properties similarly
+                    // Update other properties similarly.
                 }
             }
             return updatedRecord;
@@ -79,7 +77,7 @@ namespace RemoteSaveAdaptor.Controllers
         /// <param name="deletedRecord">It contains the specific record detail which is need to be removed.</param>
         /// <returns>It returns the deleted record detail</returns>
         [HttpPost]
-        [Route("api/Pivot/Remove")]
+        [Route("api/Orders/Remove")]
         public object Remove([FromBody] CRUDModel<OrdersDetails> deletedRecord)
         {
             int orderId = int.Parse(deletedRecord.key.ToString()); // get key value from the deletedRecord
