@@ -147,7 +147,7 @@ remote-save-adaptor-with-pivot-table/
 │
 ├── 📁 RemoteSaveAdaptor/                   # ASP.NET Core Web API backend
 │   ├── 📁 Controllers/
-│   │   └── PivotController.cs              # Endpoints: GET, POST, Insert, Update, Remove
+│   │   └── OrdersController.cs              # Endpoints: GET, POST, Insert, Update, Remove
 │   ├── 📁 Models/
 │   │   └── OrdersDetails.cs                # Order data model + sample data
 │   ├── 📁 Properties/
@@ -263,7 +263,7 @@ import { DataManager, RemoteSaveAdaptor } from '@syncfusion/ej2-data';
 import './App.css';
 
 function App() {
-    const serviceUrl = "http://localhost:5211/api/Pivot"; // 👈 Update if your backend uses a different port
+    const serviceUrl = "http://localhost:5211/api/Orders"; // 👈 Update if your backend uses a different port
 
     const [data, setData] = useState(null);
 
@@ -459,7 +459,7 @@ public class CRUDModel<T> where T : class
 
 ## 📖 API Reference
 
-The backend exposes the following endpoints through `PivotController`:
+The backend exposes the following endpoints through `OrdersController`:
 
 | Method   | Route                       | Purpose                                                            | Request Body                  | Response                  |
 | -------- | --------------------------- | ------------------------------------------------------------------ | ----------------------------- | ------------------------- |

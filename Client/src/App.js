@@ -4,7 +4,7 @@ import { DataManager, RemoteSaveAdaptor } from '@syncfusion/ej2-data';
 import './App.css';
 
 function App() {
-    const serviceUrl = "http://localhost:5211/api/Pivot"; // Replace with actual backend URL.
+    const serviceUrl = "http://localhost:5211/api/Orders"; // Replace with actual backend URL.
     const [data, setData] = useState(null);
     useEffect(() => {
         fetch(serviceUrl)
