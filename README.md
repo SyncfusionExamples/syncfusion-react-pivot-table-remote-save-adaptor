@@ -357,7 +357,7 @@ The API will start on `http://localhost:5211` by default (per `Properties/launch
 
 **Verify it works:**
 
-- 🌐 Open `http://localhost:5211/api/Pivot` in your browser.
+- 🌐 Open `http://localhost:5211/api/Orders` in your browser.
 - ✅ You should see a JSON array of all seed order records (returned by the `GetOrderData` action).
 
 > 📝 If the terminal shows a different port, update the `serviceUrl` constant in `Client/src/App.js` to match.
@@ -377,7 +377,7 @@ You should see the Pivot Table populated with aggregated **Freight** values, gro
 
 1. Open the browser's **Developer Tools** (F12) → **Network** tab.
 2. Reload the page.
-3. You should see **one** initial `GET http://localhost:5211/api/Pivot` request that returns the full dataset.
+3. You should see **one** initial `GET http://localhost:5211/api/Orders` request that returns the full dataset.
 4. Try filtering, sorting, or paging — **no new network requests** should appear (those happen client-side).
 5. Open the drill-through grid and perform a CRUD operation — a new request will fire to `/Insert`, `/Update`, or `/Remove`.
 
@@ -389,10 +389,10 @@ The Pivot Table supports full CRUD through its built-in **drill-through editing*
 
 | Step | Action                                                                                                  | Expected Network Request                                |
 | ---- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| 1️⃣  | **Double-click** any pivot cell to open the drill-through grid showing the underlying source records.   | Initial `GET` to `/api/Pivot`                           |
-| ➕ 2️⃣ | Click **Add**, fill in the new row fields, then click **Update**.                                       | `POST http://localhost:5211/api/Pivot/Insert`           |
-| ✏️ 3️⃣ | Click **Edit** on an existing row, change a field, then click **Update**.                                | `POST http://localhost:5211/api/Pivot/Update`           |
-| 🗑️ 4️⃣ | Click **Delete** on a row to remove it.                                                                  | `POST http://localhost:5211/api/Pivot/Remove`           |
+| 1️⃣  | **Double-click** any pivot cell to open the drill-through grid showing the underlying source records.   | Initial `GET` to `/api/Orders`                           |
+| ➕ 2️⃣ | Click **Add**, fill in the new row fields, then click **Update**.                                       | `POST http://localhost:5211/api/Orders/Insert`           |
+| ✏️ 3️⃣ | Click **Edit** on an existing row, change a field, then click **Update**.                                | `POST http://localhost:5211/api/Orders/Update`           |
+| 🗑️ 4️⃣ | Click **Delete** on a row to remove it.                                                                  | `POST http://localhost:5211/api/Orders/Remove`           |
 | 🔁 5️⃣ | The Pivot Table automatically refreshes to display the updated aggregated data.                          | No additional request — refresh is client-side          |
 
 > 🔑 The `OrderID` column is automatically marked as the primary key inside the `beginDrillThrough` event, so update and delete operations know which record to target.
@@ -407,15 +407,15 @@ Understanding what travels over the wire and what stays in the browser is the ke
 
 | User action              | Where it runs | Server request? |
 | ------------------------ | ------------- | --------------- |
-| Initial page load        | Server        | ✅ `GET /api/Pivot` |
+| Initial page load        | Server        | ✅ `GET /api/Orders` |
 | Apply a filter           | Browser       | ❌ |
 | Sort a column            | Browser       | ❌ |
 | Change page              | Browser       | ❌ |
 | Search                   | Browser       | ❌ |
 | Group / expand / collapse| Browser       | ❌ |
-| **Insert** a record      | **Server**    | ✅ `POST /api/Pivot/Insert` |
-| **Update** a record      | **Server**    | ✅ `POST /api/Pivot/Update` |
-| **Delete** a record      | **Server**    | ✅ `POST /api/Pivot/Remove` |
+| **Insert** a record      | **Server**    | ✅ `POST /api/Orders/Insert` |
+| **Update** a record      | **Server**    | ✅ `POST /api/Orders/Update` |
+| **Delete** a record      | **Server**    | ✅ `POST /api/Orders/Remove` |
 
 ### Why a single initial load?
 
@@ -446,7 +446,7 @@ public class CRUDModel<T> where T : class
 | ❓ Issue                                | 🔍 Symptom                                                                                                       | ✅ Resolution                                                                                                                |
 | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | 🚫 Empty Pivot Table                    | Pivot loads with no errors but no rows or values appear.                                                          | Ensure `serviceUrl` matches the backend port and that the initial `GET` returns a JSON array.                                 |
-| 404 Not Found                           | Network tab shows a 404 response when the Pivot Table loads.                                                     | Confirm the backend is running and the route is `[Route("api/[controller]")]`. The controller is `Pivot`, so the URL is `/api/Pivot`. |
+| 404 Not Found                           | Network tab shows a 404 response when the Pivot Table loads.                                                     | Confirm the backend is running and the route is `[Route("api/[controller]")]`. The controller is `Pivot`, so the URL is `/api/Orders`. |
 | 💥 500 Internal Server Error            | The Pivot Table fails and the browser shows a server error.                                                      | Check the terminal/Visual Studio output for stack traces. Common causes: null reference or serialization issues.             |
 | 🌐 CORS Blocked                         | Console shows `Access to XMLHttpRequest ... has been blocked by CORS policy`.                                    | Verify CORS is configured in `Program.cs` and that `app.UseCors()` is called **before** `app.MapControllers()`.               |
 | 💾 CRUD operations not saving           | The edit dialog closes but changes are not reflected in the data.                                                | Confirm the primary key is set in `beginDrillThrough` and that `insertUrl`/`updateUrl`/`removeUrl` point to the right routes. |
@@ -463,11 +463,11 @@ The backend exposes the following endpoints through `OrdersController`:
 
 | Method   | Route                       | Purpose                                                            | Request Body                  | Response                  |
 | -------- | --------------------------- | ------------------------------------------------------------------ | ----------------------------- | ------------------------- |
-| `GET`    | `/api/Pivot`                | Retrieve all order records (used by the initial client load)       | —                             | JSON array of orders      |
-| `POST`   | `/api/Pivot`                | Return all records with count (`{ result, count }`)                | —                             | `{ result, count }`       |
-| `POST`   | `/api/Pivot/Insert`         | Insert a new order                                                 | `CRUDModel<OrdersDetails>`    | The newly inserted record |
-| `POST`   | `/api/Pivot/Update`         | Update an existing order (matched by `OrderID`)                    | `CRUDModel<OrdersDetails>`    | The updated record        |
-| `POST`   | `/api/Pivot/Remove`         | Remove an order by primary key                                     | `CRUDModel<OrdersDetails>`    | The deleted record        |
+| `GET`    | `/api/Orders`                | Retrieve all order records (used by the initial client load)       | —                             | JSON array of orders      |
+| `POST`   | `/api/Orders`                | Return all records with count (`{ result, count }`)                | —                             | `{ result, count }`       |
+| `POST`   | `/api/Orders/Insert`         | Insert a new order                                                 | `CRUDModel<OrdersDetails>`    | The newly inserted record |
+| `POST`   | `/api/Orders/Update`         | Update an existing order (matched by `OrderID`)                    | `CRUDModel<OrdersDetails>`    | The updated record        |
+| `POST`   | `/api/Orders/Remove`         | Remove an order by primary key                                     | `CRUDModel<OrdersDetails>`    | The deleted record        |
 
 The `OrdersDetails` model exposes the following fields (additional fields are commented out in the model and can be re-enabled as needed):
 
