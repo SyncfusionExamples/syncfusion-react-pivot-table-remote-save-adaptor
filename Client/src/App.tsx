@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { PivotViewComponent } from '@syncfusion/ej2-react-pivotview';
+import { PivotViewComponent, CellEditSettings } from '@syncfusion/ej2-react-pivotview';
 import { DataManager, RemoteSaveAdaptor } from '@syncfusion/ej2-data';
+import type { DataSourceSettingsModel } from '@syncfusion/ej2-pivotview/src/model/datasourcesettings-model';
+import type { BeginDrillThroughEventArgs } from '@syncfusion/ej2-pivotview';
 import './App.css';
 
-function App() {
-    const serviceUrl = "http://localhost:5211/api/Orders"; // Replace with actual backend URL.
-    const [data, setData] = useState(null);
+function App(): React.ReactElement {
+    const serviceUrl: string = "https://localhost:7006/api/Orders"; // Replace with actual backend URL.
+    const [data, setData] = useState<DataManager | null>(null);
     useEffect(() => {
         fetch(serviceUrl)
             .then((response) => response.json())
@@ -22,24 +24,28 @@ function App() {
     },
         []);
 
-    const editSettings = {
-        allowEditing: true,    // Enables the Edit button and allows users to modify existing records
-        allowAdding: true,     // Enables the Add button and allows users to create new records
-        allowDeleting: true,   // Enables the Delete button and allows users to remove records
-        mode: 'Normal'         // Uses Normal mode (popup dialog) for editing; other options: 'Dialog', 'Batch'
-    };
-
-    const dataSourceSettings = {
-        dataSource: data,
+    const dataSourceSettings: DataSourceSettingsModel = {
+        dataSource: data as DataManager,
         expandAll: false,
         rows: [{ name: 'CustomerID' }],
         columns: [{ name: 'OrderID' }],
         values: [{ name: 'Freight' }],
         formatSettings: [{ name: 'Freight', format: 'N0' }],
     };
-    let pivotObj;
+
+    // Enable editing functionality
+    const editSettings: CellEditSettings = {
+        allowEditing: true,    // Enables the Edit button and allows users to modify existing records.
+        allowAdding: true,     // Enables the Add button and allows users to create new records.
+        allowDeleting: true,   // Enables the Delete button and allows users to remove records.
+        mode: 'Normal'         // Uses Normal mode (popup dialog) for editing; other options: 'Dialog', 'Batch', 'CommandColumn'.
+    };
+
+
+    const pivotObj = React.useRef<PivotViewComponent>(null);
+
     // Configure beginDrillThrough event to set the primary key for CRUD operations
-    function beginDrillThrough(args) {
+    function beginDrillThrough(args: BeginDrillThroughEventArgs) {
         // Iterate through all columns in the drill-through grid
         for (var i = 0; i < args.gridObj.columns.length; i++) {
             // Check if the current column is the primary key column
@@ -57,9 +63,10 @@ function App() {
             }
         }
     }
+
     return (
         <div className='control-section' style={{ margin: 100 }}>
-            <PivotViewComponent ref={d => pivotObj = d} id='PivotView' height={350} width={700} editSettings={editSettings} beginDrillThrough={beginDrillThrough} dataSourceSettings={dataSourceSettings}>
+            <PivotViewComponent ref={pivotObj} id='PivotView' height={350} width={700} dataSourceSettings={dataSourceSettings} editSettings={editSettings} beginDrillThrough={beginDrillThrough}>
             </PivotViewComponent>
         </div>
     );

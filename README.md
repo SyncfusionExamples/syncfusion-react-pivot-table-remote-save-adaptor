@@ -115,13 +115,14 @@ Make sure the following software and packages are installed before running the p
 
 | Software / Package                              | Version       | Purpose                                                  |
 | ----------------------------------------------- | ------------- | -------------------------------------------------------- |
-| 🟢 Node.js                                      | 18.x or later | Runtime for the React development server                 |
-| ⚛️ React                                        | 18.x or later | Build the Pivot Table client                             |
+| 🟢 Node.js                                      | 18.x or later | Runtime for the React development server (Vite)           |
+| ⚛️ React                                        | 18.x or later | Build the Pivot Table client (TypeScript + TSX)          |
 | 🟣 .NET SDK                                     | 8.0 or later  | Build and run the ASP.NET Core Web API                   |
 | 🧑‍💻 Visual Studio / VS Code                    | Latest        | Configure and run the backend API                        |
 | 📦 `@syncfusion/ej2-react-pivotview`            | 33.1.45+      | React Pivot Table component                              |
 | 📦 `@syncfusion/ej2-data`                       | 33.1.45+      | `DataManager` and `RemoteSaveAdaptor`                    |
 | 📦 `Microsoft.AspNetCore.Mvc.NewtonsoftJson`    | 8.0+          | Preserve original PascalCase property names during JSON  |
+| 📦 `typescript` / `vite`                        | Latest        | TypeScript compilation and Vite dev/build tooling        |
 
 ---
 
@@ -129,21 +130,20 @@ Make sure the following software and packages are installed before running the p
 
 ```
 remote-save-adaptor-with-pivot-table/
-├── 📁 Client/                              # React frontend (Pivot Table)
+├── 📁 Client/                              # React frontend (Pivot Table, TypeScript + Vite)
 │   ├── 📁 public/
-│   │   ├── index.html
-│   │   ├── manifest.json
-│   │   └── robots.txt
 │   ├── 📁 src/
 │   │   ├── App.css                         # Component styles
-│   │   ├── App.js                          # Pivot Table with RemoteSaveAdaptor configuration
-│   │   ├── App.test.js
-│   │   ├── datasource.js                   # Local pivot data (alternate sample)
+│   │   ├── App.tsx                         # Pivot Table with RemoteSaveAdaptor configuration (TypeScript)
 │   │   ├── index.css
-│   │   ├── index.js                        # React entry point
-│   │   ├── reportWebVitals.js
-│   │   └── setupTests.js
-│   └── package.json                        # React dependencies & scripts
+│   │   ├── main.tsx                        # React entry point (TypeScript)
+│   │   └── assets/
+│   ├── index.html                          # Vite HTML entry
+│   ├── package.json                        # React/TypeScript dependencies & scripts
+│   ├── tsconfig.json                       # TypeScript configuration
+│   ├── tsconfig.app.json                   # TypeScript config for the app build
+│   ├── tsconfig.node.json                  # TypeScript config for Vite/Node tooling
+│   └── vite.config.ts                      # Vite build configuration
 │
 ├── 📁 RemoteSaveAdaptor/                   # ASP.NET Core Web API backend
 │   ├── 📁 Controllers/
@@ -253,19 +253,21 @@ npm install
 
 #### 3.2 Verify the API URL
 
-Open `src/App.js` and ensure the `serviceUrl` points to your backend port. The default in this repo is `5211` (as defined in `Properties/launchSettings.json`).
+Open `src/App.tsx` and ensure the `serviceUrl` points to your backend port. The default in this repo is `5211` (as defined in `Properties/launchSettings.json`).
 
-```jsx
-// filepath: Client/src/App.js
+```tsx
+// filepath: Client/src/App.tsx
 import React, { useState, useEffect } from 'react';
-import { PivotViewComponent } from '@syncfusion/ej2-react-pivotview';
+import { PivotViewComponent, CellEditSettings } from '@syncfusion/ej2-react-pivotview';
 import { DataManager, RemoteSaveAdaptor } from '@syncfusion/ej2-data';
+import type { DataSourceSettingsModel } from '@syncfusion/ej2-pivotview/src/model/datasourcesettings-model';
+import type { BeginDrillThroughEventArgs } from '@syncfusion/ej2-pivotview';
 import './App.css';
 
-function App() {
-    const serviceUrl = "http://localhost:5211/api/Orders"; // 👈 Update if your backend uses a different port
+function App(): React.ReactElement {
+    const serviceUrl: string = "http://localhost:5211/api/Orders"; // 👈 Update if your backend uses a different port
 
-    const [data, setData] = useState(null);
+    const [data, setData] = useState<DataManager | null>(null);
 
     useEffect(() => {
         fetch(serviceUrl)
@@ -285,15 +287,15 @@ function App() {
             .catch((error) => console.error("Error fetching data:", error));
     }, []);
 
-    const editSettings = {
+    const editSettings: CellEditSettings = {
         allowEditing: true,
         allowAdding: true,
         allowDeleting: true,
         mode: 'Normal'
     };
 
-    const dataSourceSettings = {
-        dataSource: data,
+    const dataSourceSettings: DataSourceSettingsModel = {
+        dataSource: data as DataManager,
         expandAll: false,
         rows: [{ name: 'CustomerID' }],
         columns: [{ name: 'OrderID' }],
@@ -301,10 +303,10 @@ function App() {
         formatSettings: [{ name: 'Freight', format: 'N0' }],
     };
 
-    let pivotObj;
+    const pivotObj = React.useRef<PivotViewComponent>(null);
 
     // Configure beginDrillThrough to mark the primary key and adjust edit types.
-    function beginDrillThrough(args) {
+    function beginDrillThrough(args: BeginDrillThroughEventArgs) {
         for (var i = 0; i < args.gridObj.columns.length; i++) {
             if (args.gridObj.columns[i].field === "OrderID") {
                 args.gridObj.columns[i].isPrimaryKey = true;
@@ -320,7 +322,7 @@ function App() {
     return (
         <div className='control-section' style={{ margin: 100 }}>
             <PivotViewComponent
-                ref={d => pivotObj = d}
+                ref={pivotObj}
                 id='PivotView'
                 height={350}
                 width={700}
@@ -360,18 +362,20 @@ The API will start on `http://localhost:5211` by default (per `Properties/launch
 - 🌐 Open `http://localhost:5211/api/Orders` in your browser.
 - ✅ You should see a JSON array of all seed order records (returned by the `GetOrderData` action).
 
-> 📝 If the terminal shows a different port, update the `serviceUrl` constant in `Client/src/App.js` to match.
+> 📝 If the terminal shows a different port, update the `serviceUrl` constant in `Client/src/App.tsx` to match.
 
 ### ▶️ Start the Frontend (Terminal 2)
 
 ```bash
 cd Client
-npm start
+npm run dev
 ```
 
-The React app will open at `http://localhost:3000` by default. 🎉
+The React app will open at the URL shown in the terminal (Vite default is `http://localhost:5173`). 🎉
 
 You should see the Pivot Table populated with aggregated **Freight** values, grouped by **CustomerID** (rows) and **OrderID** (columns).
+
+> 📝 If the terminal shows a different port, update the `serviceUrl` constant in `Client/src/App.tsx` to match your backend port.
 
 ### ✅ Verify in the Browser
 
@@ -391,9 +395,9 @@ The Pivot Table supports full CRUD through its built-in **drill-through editing*
 | ---- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
 | 1️⃣  | **Double-click** any pivot cell to open the drill-through grid showing the underlying source records.   | Initial `GET` to `/api/Orders`                           |
 | ➕ 2️⃣ | Click **Add**, fill in the new row fields, then click **Update**.                                       | `POST http://localhost:5211/api/Orders/Insert`           |
-| ✏️ 3️⃣ | Click **Edit** on an existing row, change a field, then click **Update**.                                | `POST http://localhost:5211/api/Orders/Update`           |
+| ✏️ 3️⃣ | Click **Edit** on an existing row, change a field, then click **Update**.                               | `POST http://localhost:5211/api/Orders/Update`           |
 | 🗑️ 4️⃣ | Click **Delete** on a row to remove it.                                                                  | `POST http://localhost:5211/api/Orders/Remove`           |
-| 🔁 5️⃣ | The Pivot Table automatically refreshes to display the updated aggregated data.                          | No additional request — refresh is client-side          |
+| 🔁 5️⃣ | The Pivot Table automatically refreshes to display the updated aggregated data.                         | No additional request — refresh is client-side          |
 
 > 🔑 The `OrderID` column is automatically marked as the primary key inside the `beginDrillThrough` event, so update and delete operations know which record to target.
 
